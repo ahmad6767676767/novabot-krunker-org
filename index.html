@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Arena 3D - Made by Ahmad Bin Shifa</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, sans-serif; user-select: none; }
+        
+        /* Tactical Crosshair */
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 12px;
+            height: 12px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 20;
+        }
+        #crosshair::before, #crosshair::after {
+            content: '';
+            position: absolute;
+            background: #00ffcc;
+            box-shadow: 0 0 4px #00ffcc;
+        }
+        #crosshair::before { top: 5px; left: -6px; width: 24px; height: 2px; }
+        #crosshair::after { top: -6px; left: 5px; width: 2px; height: 24px; }
+        
+        .hit-marker {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            transform: translate(-50%, -50%) rotate(45deg);
+            border: 2px solid #ff0055;
+            pointer-events: none;
+            z-index: 21;
+            opacity: 0;
+            transition: opacity 0.1s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-white">
+
+    <!-- HUD OVERLAY -->
+    <div id="hud" class="hidden absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-6">
+        
+        <!-- Top Bar -->
+        <div class="flex justify-between items-start">
+            <!-- Author Credit & Title -->
+            <div class="bg-slate-900/80 backdrop-blur border border-slate-700/80 p-3 rounded-xl shadow-lg">
+                <h1 class="text-sm font-bold text-indigo-400">PIXEL ARENA 3D</h1>
+                <p class="text-[11px] text-slate-300">Made by <span class="text-teal-300 font-semibold">Ahmad Bin Shifa</span></p>
+            </div>
+
+            <!-- Score & Kills -->
+            <div class="flex gap-4">
+                <div class="bg-slate-900/80 backdrop-blur border border-slate-700/80 px-4 py-2 rounded-xl text-center">
+                    <p class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Score</p>
+                    <p id="scoreText" class="text-xl font-black text-amber-400">0</p>
+                </div>
+                <div class="bg-slate-900/80 backdrop-blur border border-slate-700/80 px-4 py-2 rounded-xl text-center">
+                    <p class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Kills</p>
+                    <p id="killsText" class="text-xl font-black text-emerald-400">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Crosshair & Hit Marker -->
+        <div id="crosshair"></div>
+        <div id="hitMarker" class="hit-marker"></div>
+
+        <!-- Bottom Stats Bar -->
+        <div class="flex justify-between items-end">
+            <!-- Health Bar -->
+            <div class="w-64 bg-slate-900/80 backdrop-blur border border-slate-700/80 p-3 rounded-xl shadow-lg">
+                <div class="flex justify-between text-xs font-bold mb-1">
+                    <span class="text-red-400">HEALTH</span>
+                    <span id="healthValue" class="text-white">100 HP</span>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-3 overflow-hidden border border-slate-700">
+                    <div id="healthBar" class="bg-gradient-to-r from-red-600 to-emerald-500 h-full w-full transition-all duration-200"></div>
+                </div>
+            </div>
+
+            <!-- Ammo & Controls Hint -->
+            <div class="bg-slate-900/80 backdrop-blur border border-slate-700/80 px-5 py-3 rounded-xl text-right shadow-lg">
+                <p id="ammoText" class="text-2xl font-black text-indigo-400">30 / 30</p>
+                <p class="text-[10px] text-slate-400 uppercase tracking-wide">Press <kbd class="bg-slate-800 border border-slate-600 px-1 rounded text-slate-200">R</kbd> to Reload</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- START / PAUSE / GAME OVER MENU OVERLAY -->
+    <div id="menuScreen" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-30 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 max-w-md w-full rounded-2xl p-8 shadow-2xl text-center relative overflow-hidden">
+            <!-- Glow background -->
+            <div class="absolute -top-20 -left-20 w-40 h-40 bg-indigo-500/20 rounded-full blur-2xl"></div>
+            <div class="absolute -bottom-20 -right-20 w-40 h-40 bg-teal-500/20 rounded-full blur-2xl"></div>
+
+            <div class="w-16 h-16 bg-gradient-to-tr from-indigo-500 to-teal-400 rounded-2xl mx-auto flex items-center justify-center text-white text-3xl shadow-lg shadow-indigo-500/30 mb-4">
+                🎯
+            </div>
+
+            <h1 class="text-3xl font-extrabold tracking-tight text-white mb-1">PIXEL ARENA 3D</h1>
+            <p class="text-sm font-semibold text-teal-400 mb-6">Made by Ahmad Bin Shifa</p>
+
+            <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-4 mb-6 text-left space-y-2 text-xs text-slate-300">
+                <p class="font-bold text-slate-200 mb-1">🎮 How to Play:</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <div><span class="text-indigo-400 font-semibold">WASD</span> : Move around</div>
+                    <div><span class="text-indigo-400 font-semibold">Mouse</span> : Aim camera</div>
+                    <div><span class="text-indigo-400 font-semibold">Left Click</span> : Shoot</div>
+                    <div><span class="text-indigo-400 font-semibold">Space</span> : Jump</div>
+                    <div><span class="text-indigo-400 font-semibold">R</span> : Reload gun</div>
+                    <div><span class="text-indigo-400 font-semibold">ESC</span> : Pause game</div>
+                </div>
+            </div>
+
+            <button id="startButton" class="w-full bg-gradient-to-r from-indigo-600 to-teal-500 hover:from-indigo-500 hover:to-teal-400 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-500/25 transition-all text-sm uppercase tracking-wider">
+                Click to Start Game
+            </button>
+        </div>
+    </div>
+
+    <!-- THREE.JS & GAME CODE -->
+    <script type="module">
+        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+        import { PointerLockControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/PointerLockControls.js';
+
+        // --- Audio Synthesizer (Web Audio API) ---
+        const AudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playShootSound() {
+            if (AudioCtx.state === 'suspended') AudioCtx.resume();
+            const osc = AudioCtx.createOscillator();
+            const gain = AudioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(400, AudioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(10, AudioCtx.currentTime + 0.12);
+            gain.gain.setValueAtTime(0.2, AudioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, AudioCtx.currentTime + 0.12);
+            osc.connect(gain);
+            gain.connect(AudioCtx.destination);
+            osc.start();
+            osc.stop(AudioCtx.currentTime + 0.12);
+        }
+
+        function playHitSound() {
+            if (AudioCtx.state === 'suspended') AudioCtx.resume();
+            const osc = AudioCtx.createOscillator();
+            const gain = AudioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, AudioCtx.currentTime);
+            osc.frequency.setValueAtTime(1200, AudioCtx.currentTime + 0.05);
+            gain.gain.setValueAtTime(0.15, AudioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, AudioCtx.currentTime + 0.1);
+            osc.connect(gain);
+            gain.connect(AudioCtx.destination);
+            osc.start();
+            osc.stop(AudioCtx.currentTime + 0.1);
+        }
+
+        // --- Game State Variables ---
+        let health = 100;
+        let score = 0;
+        let kills = 0;
+        let ammo = 30;
+        const maxAmmo = 30;
+        let isReloading = false;
+
+        // --- Scene & Camera Setup ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0f172a);
+        scene.fog = new THREE.FogExp2(0x0f172a, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        // --- Lights ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0x6366f1, 1.2);
+        dirLight.position.set(30, 50, 20);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+
+        // --- Map Environment ---
+        const floorGeo = new THREE.PlaneGeometry(120, 120);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        // Grid overlay on floor
+        const grid = new THREE.GridHelper(120, 40, 0x6366f1, 0x334155);
+        grid.position.y = 0.01;
+        scene.add(grid);
+
+        // Obstacles (Boxes/Crates)
+        const obstacles = [];
+        const boxGeo = new THREE.BoxGeometry(4, 4, 4);
+        const boxMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 });
+
+        const boxPositions = [
+            [-10, 2, -15], [10, 2, -20], [-20, 2, 10], [15, 2, 15], 
+            [0, 2, -30], [-25, 2, -25], [25, 2, -10], [5, 2, 25]
+        ];
+
+        boxPositions.forEach(pos => {
+            const box = new THREE.Mesh(boxGeo, boxMat);
+            box.position.set(...pos);
+            box.castShadow = true;
+            box.receiveShadow = true;
+            scene.add(box);
+            obstacles.push(box);
+        });
+
+        // --- Player Gun Mesh (First Person View) ---
+        const gunGroup = new THREE.Group();
+        const bodyGeo = new THREE.BoxGeometry(0.2, 0.3, 0.8);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.2 });
+        const gunBody = new THREE.Mesh(bodyGeo, bodyMat);
+
+        const barrelGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.6);
+        const barrelMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.8 });
+        const gunBarrel = new THREE.Mesh(barrelGeo, barrelMat);
+        gunBarrel.rotation.x = Math.PI / 2;
+        gunBarrel.position.set(0, 0.05, -0.5);
+
+        gunGroup.add(gunBody, gunBarrel);
+        gunGroup.position.set(0.3, -0.35, -0.6);
+        camera.add(gunGroup);
+        scene.add(camera);
+
+        // --- Controls & Movement ---
+        const controls = new PointerLockControls(camera, document.body);
+        const menuScreen = document.getElementById('menuScreen');
+        const startButton = document.getElementById('startButton');
+        const hud = document.getElementById('hud');
+
+        startButton.addEventListener('click', () => controls.lock());
+        controls.addEventListener('lock', () => {
+            menuScreen.classList.add('hidden');
+            hud.classList.remove('hidden');
+        });
+        controls.addEventListener('unlock', () => {
+            menuScreen.classList.remove('hidden');
+            hud.classList.add('hidden');
+        });
+
+        const moveState = { forward: false, backward: false, left: false, right: false, jump: false };
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+        let canJump = false;
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyW') moveState.forward = true;
+            if (e.code === 'KeyS') moveState.backward = true;
+            if (e.code === 'KeyA') moveState.left = true;
+            if (e.code === 'KeyD') moveState.right = true;
+            if (e.code === 'Space' && canJump) { velocity.y += 12; canJump = false; }
+            if (e.code === 'KeyR') reloadGun();
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.code === 'KeyW') moveState.forward = false;
+            if (e.code === 'KeyS') moveState.backward = false;
+            if (e.code === 'KeyA') moveState.left = false;
+            if (e.code === 'KeyD') moveState.right = false;
+        });
+
+        // --- Enemy Bots ---
+        const enemies = [];
+        const enemyGeo = new THREE.CapsuleGeometry(0.8, 1.8, 4, 8);
+
+        function spawnEnemy() {
+            const enemyMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3 });
+            const enemy = new THREE.Mesh(enemyGeo, enemyMat);
+            
+            // Random positioning away from center
+            const x = (Math.random() - 0.5) * 80;
+            const z = (Math.random() - 0.5) * 80;
+            enemy.position.set(x, 1.7, z);
+            enemy.castShadow = true;
+            
+            enemy.userData = { health: 60, maxHealth: 60, lastShot: 0 };
+            scene.add(enemy);
+            enemies.push(enemy);
+        }
+
+        // Spawn initial 5 bots
+        for (let i = 0; i < 5; i++) spawnEnemy();
+
+        // --- Shooting Mechanics ---
+        const raycaster = new THREE.Raycaster();
+        
+        window.addEventListener('mousedown', (e) => {
+            if (!controls.isLocked || e.button !== 0) return;
+            if (ammo <= 0 || isReloading) {
+                reloadGun();
+                return;
+            }
+
+            // Shoot action
+            ammo--;
+            updateHUD();
+            playShootSound();
+
+            // Gun Recoil Animation
+            gunGroup.position.z = -0.4;
+            setTimeout(() => gunGroup.position.z = -0.6, 80);
+
+            // Raycast detection from center of camera
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            const intersects = raycaster.intersectObjects(enemies);
+
+            if (intersects.length > 0) {
+                const hitEnemy = intersects[0].object;
+                hitEnemy.userData.health -= 30;
+
+                // Hit Marker effect
+                playHitSound();
+                const marker = document.getElementById('hitMarker');
+                marker.style.opacity = '1';
+                setTimeout(() => marker.style.opacity = '0', 120);
+
+                // Flash red
+                hitEnemy.material.color.setHex(0xffffff);
+                setTimeout(() => hitEnemy.material.color.setHex(0xef4444), 80);
+
+                // Check Bot Death
+                if (hitEnemy.userData.health <= 0) {
+                    scene.remove(hitEnemy);
+                    enemies.splice(enemies.indexOf(hitEnemy), 1);
+                    score += 100;
+                    kills += 1;
+                    updateHUD();
+                    setTimeout(spawnEnemy, 2000); // Respawn new bot
+                }
+            }
+        });
+
+        function reloadGun() {
+            if (isReloading || ammo === maxAmmo) return;
+            isReloading = true;
+            document.getElementById('ammoText').textContent = "RELOADING...";
+            setTimeout(() => {
+                ammo = maxAmmo;
+                isReloading = false;
+                updateHUD();
+            }, 1200);
+        }
+
+        function updateHUD() {
+            document.getElementById('ammoText').textContent = `${ammo} / ${maxAmmo}`;
+            document.getElementById('scoreText').textContent = score;
+            document.getElementById('killsText').textContent = kills;
+            document.getElementById('healthValue').textContent = `${Math.max(0, health)} HP`;
+            document.getElementById('healthBar').style.width = `${Math.max(0, health)}%`;
+        }
+
+        // --- Game Loop ---
+        let prevTime = performance.now();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = performance.now();
+            const delta = (time - prevTime) / 1000;
+            prevTime = time;
+
+            if (controls.isLocked) {
+                // Movement physics
+                velocity.x -= velocity.x * 10.0 * delta;
+                velocity.z -= velocity.z * 10.0 * delta;
+                velocity.y -= 30.0 * delta; // Gravity
+
+                direction.z = Number(moveState.forward) - Number(moveState.backward);
+                direction.x = Number(moveState.right) - Number(moveState.left);
+                direction.normalize();
+
+                if (moveState.forward || moveState.backward) velocity.z -= direction.z * 50.0 * delta;
+                if (moveState.left || moveState.right) velocity.x -= direction.x * 50.0 * delta;
+
+                controls.moveRight(-velocity.x * delta);
+                controls.moveForward(-velocity.z * delta);
+
+                camera.position.y += (velocity.y * delta);
+
+                // Floor collision
+                if (camera.position.y < 2) {
+                    velocity.y = 0;
+                    camera.position.y = 2;
+                    canJump = true;
+                }
+
+                // Bot AI Logic (Walk towards player & attack)
+                enemies.forEach(enemy => {
+                    const dist = enemy.position.distanceTo(camera.position);
+                    if (dist > 3) {
+                        enemy.lookAt(camera.position.x, 1.7, camera.position.z);
+                        enemy.translateZ(3.0 * delta);
+                    } else {
+                        // Bot attacks player
+                        if (time - enemy.userData.lastShot > 1000) {
+                            health -= 10;
+                            updateHUD();
+                            enemy.userData.lastShot = time;
+
+                            if (health <= 0) {
+                                controls.unlock();
+                                alert("Game Over! Made by Ahmad Bin Shifa\nYour Score: " + score);
+                                health = 100;
+                                score = 0;
+                                kills = 0;
+                                updateHUD();
+                            }
+                        }
+                    }
+                });
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
